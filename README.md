@@ -1,5 +1,4 @@
-ok
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -123,10 +122,6 @@ ok
       margin-bottom: 15px;
       border-left: 4px solid #2F75B5;
     }
-    #loadingStatus {
-      color: #666;
-      font-style: italic;
-    }
   </style>
 </head>
 <body>
@@ -162,7 +157,7 @@ ok
     <div class="invoice-info">
       <div class="client-info">
         <div><span class="info-label">Bill To:</span>
-          <input type="text" id="customerName" placeholder="Customer Name" required>
+          <input type="text" id="customerName" placeholder="Customer Name">
         </div>
         <div><span class="info-label">Address:</span>
           <input type="text" id="customerAddress" placeholder="Customer Address">
@@ -239,7 +234,7 @@ ok
 
   <!-- Saved Invoices -->
   <div id="savedInvoices">
-    <h3>Saved Invoices <span id="loadingStatus"></span></h3>
+    <h3>Saved Invoices</h3>
     <div id="invoicesList"></div>
   </div>
 </div>
@@ -252,15 +247,15 @@ ok
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-  // Your Firebase Configuration
+  // 🔥 Replace with your Firebase config
   const firebaseConfig = {
-    apiKey: "AIza...yourkey...",
-    authDomain: "e3med-invoice-system.firebaseapp.com",
-    databaseURL: "https://e3med-invoice-system.firebaseio.com",
-    projectId: "e3med-invoice-system",
-    storageBucket: "e3med-invoice-system.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdefg12345"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
 
   // Initialize Firebase
@@ -270,38 +265,13 @@ ok
   let invoices = [];
   let nextInvoiceNumber = 1;
 
-  // Debug function to check Firebase connection
-  function checkFirebaseConnection() {
-    database.ref('.info/connected').on('value', (snapshot) => {
-      if (snapshot.val() === true) {
-        console.log("Firebase connected successfully");
-      } else {
-        console.error("Firebase not connected");
-      }
-    });
-  }
-
-  function checkLogin() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (username === "e3med" && password === "e3med2025+") {
-      document.getElementById('loginSection').style.display = 'none';
-      document.getElementById('invoiceSection').style.display = 'block';
-      init();
-    } else {
-      document.getElementById('loginMessage').textContent = "Invalid credentials!";
-    }
-  }
-
+  // Initialize the page
   function init() {
-    checkFirebaseConnection();
-    
     // Set today's date as default
     document.getElementById('invoiceDate').valueAsDate = new Date();
     
     // Add initial rows
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       addRow();
     }
     
@@ -318,6 +288,30 @@ ok
         el.textContent = currency;
       });
     });
+    
+    // Initialize invoice counter
+    initInvoiceCounter();
+  }
+
+  function initInvoiceCounter() {
+    database.ref('invoiceCounter').once('value').then(snapshot => {
+      if (!snapshot.exists()) {
+        database.ref('invoiceCounter').set(1);
+      }
+    });
+  }
+
+  function checkLogin() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (username === "e3med" && password === "e3med2025+") {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('invoiceSection').style.display = 'block';
+      init();
+    } else {
+      document.getElementById('loginMessage').textContent = "Invalid credentials!";
+    }
   }
 
   function addRow() {
@@ -378,116 +372,53 @@ ok
     });
   }
 
-function saveInvoice() {
-    console.log("Save invoice function triggered");
-    
-    // Validate required fields
-    if (!document.getElementById('customerName').value) {
-        alert("Customer name is required");
-        return;
-    }
-
+  function saveInvoice() {
     const items = [];
     const rows = document.querySelectorAll('#invoiceItems tr');
     
-    if (rows.length === 0) {
-        alert("Please add at least one item");
-        return;
-    }
-
-    // Flag to track validation
-    let validationFailed = false;
-
-    // Collect items data with better validation
     rows.forEach(row => {
-        const rowId = row.getAttribute('data-row-id');
-        const qtyInput = row.querySelector(`.row-qty[data-row="${rowId}"]`);
-        const priceInput = row.querySelector(`.row-price[data-row="${rowId}"]`);
-        
-        const qty = parseFloat(qtyInput.value);
-        const price = parseFloat(priceInput.value);
-        
-        // Highlight problematic fields
-        if (isNaN(qty) {
-            qtyInput.style.border = "1px solid red";
-            validationFailed = true;
-        } else {
-            qtyInput.style.border = "";
-        }
-        
-        if (isNaN(price)) {
-            priceInput.style.border = "1px solid red";
-            validationFailed = true;
-        } else {
-            priceInput.style.border = "";
-        }
-
-        if (isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) {
-            validationFailed = true;
-            return; // Skip adding this item
-        }
-
-        items.push({
-            reference: row.querySelector(`.row-ref[data-row="${rowId}"]`).value || "N/A",
-            description: row.querySelector(`.row-desc[data-row="${rowId}"]`).value || "No description",
-            quantity: qty,
-            unitPrice: price,
-            amount: qty * price
-        });
+      const rowId = row.getAttribute('data-row-id');
+      items.push({
+        reference: row.querySelector(`.row-ref[data-row="${rowId}"]`).value,
+        description: row.querySelector(`.row-desc[data-row="${rowId}"]`).value,
+        quantity: parseFloat(row.querySelector(`.row-qty[data-row="${rowId}"]`).value) || 0,
+        unitPrice: parseFloat(row.querySelector(`.row-price[data-row="${rowId}"]`).value) || 0,
+        amount: parseFloat(row.querySelector(`.row-amount[data-row="${rowId}"]`).textContent) || 0
+      });
     });
-
-    if (validationFailed) {
-        alert("Please check all items - quantity and price must be numbers greater than 0");
-        return;
-    }
-
-    if (items.length === 0) {
-        alert("No valid items to save");
-        return;
-    }
-
-    const invoiceData = {
-        date: document.getElementById('invoiceDate').value || new Date().toISOString().split('T')[0],
-        invoiceNumber: document.getElementById('invoiceNumber').value,
-        customerName: document.getElementById('customerName').value,
-        customerAddress: document.getElementById('customerAddress').value || "Not specified",
-        terms: document.getElementById('terms').value || "Due on receipt",
-        currency: document.getElementById('currency').value,
-        items: items,
-        subTotal: parseFloat(document.getElementById('subTotal').textContent) || 0,
-        discount: parseFloat(document.getElementById('discount').value) || 0,
-        total: parseFloat(document.getElementById('totalAmount').textContent) || 0,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        status: "active"
+    
+    const invoice = {
+      date: document.getElementById('invoiceDate').value,
+      invoiceNumber: document.getElementById('invoiceNumber').value,
+      customerName: document.getElementById('customerName').value,
+      customerAddress: document.getElementById('customerAddress').value,
+      terms: document.getElementById('terms').value,
+      currency: document.getElementById('currency').value,
+      items: items,
+      subTotal: parseFloat(document.getElementById('subTotal').textContent) || 0,
+      discount: parseFloat(document.getElementById('discount').value) || 0,
+      total: parseFloat(document.getElementById('totalAmount').textContent) || 0,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
     };
-
-    console.log("Attempting to save:", invoiceData);
-
-    // Save to Firebase
-    const newInvoiceRef = database.ref('invoices').push();
-    newInvoiceRef.set(invoiceData)
-        .then(() => {
-            console.log("Firebase save successful");
-            alert('✅ Invoice saved successfully!');
-            return database.ref('invoiceCounter').transaction(current => {
-                return (current || 0) + 1;
-            });
-        })
-        .then(() => {
+    
+    // Push to Firebase
+    database.ref('invoices').push(invoice)
+      .then(() => {
+        // Update invoice counter
+        database.ref('invoiceCounter').set(nextInvoiceNumber)
+          .then(() => {
+            alert('Invoice saved successfully!');
             loadInvoices();
             generateInvoiceNumber();
-        })
-        .catch(error => {
-            console.error("Save error:", error);
-            alert('❌ Error saving invoice: ' + error.message);
-        });
-}
+          });
+      })
+      .catch(error => {
+        alert('Error saving invoice: ' + error.message);
+      });
   }
 
   function loadInvoices() {
-    console.log("Loading invoices...");
-    document.getElementById('loadingStatus').textContent = "Loading...";
-    document.getElementById('invoicesList').innerHTML = '';
+    document.getElementById('invoicesList').innerHTML = '<p>Loading invoices...</p>';
     
     database.ref('invoices').orderByChild('timestamp').once('value')
       .then(snapshot => {
@@ -498,15 +429,11 @@ function saveInvoice() {
             ...childSnapshot.val()
           });
         });
-        console.log(`Loaded ${invoices.length} invoices`);
         renderInvoices();
-        document.getElementById('loadingStatus').textContent = "";
       })
       .catch(error => {
-        console.error("Load error:", error);
-        document.getElementById('invoicesList').innerHTML = 
-          '<p style="color:red">Error loading invoices. Check console for details.</p>';
-        document.getElementById('loadingStatus').textContent = "Error loading";
+        console.error("Error loading invoices:", error);
+        document.getElementById('invoicesList').innerHTML = '<p>Error loading invoices. Please try again.</p>';
       });
   }
 
@@ -612,7 +539,7 @@ function saveInvoice() {
     document.getElementById('invoiceItems').innerHTML = '';
     
     // Add default rows
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       addRow();
     }
     
