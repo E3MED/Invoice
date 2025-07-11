@@ -247,19 +247,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-  // 🔥 Replace with your Firebase config
+  // Your Firebase configuration
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBjZjNOWQwREWbNiPK5PTUHqDkiWuEim_g",
+    authDomain: "e3med-finance.firebaseapp.com",
+    databaseURL: "https://e3med-finance-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "e3med-finance",
+    storageBucket: "e3med-finance.firebasestorage.app",
+    messagingSenderId: "386561578213",
+    appId: "1:386561578213:web:2dffa095390d44c2ef700c",
+    measurementId: "G-QFHGC17P36"
   };
 
   // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
+  const app = firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
 
   let invoices = [];
