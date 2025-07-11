@@ -1,3 +1,4 @@
+Ok
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -555,57 +556,99 @@
     // Clone the invoice container
     const element = document.querySelector('.invoice-container').cloneNode(true);
     
-    // Remove buttons and inputs
-    element.querySelectorAll('button, input, select').forEach(el => {
-      if (el.id !== 'invoiceNumber' && el.id !== 'invoiceDate') {
-        // Replace inputs with their values
+    // Remove action buttons
+    element.querySelectorAll('button').forEach(btn => btn.remove());
+    
+    // Style all inputs to look like plain text
+    element.querySelectorAll('input, select').forEach(input => {
+      if (input.type !== 'date') { // Keep date inputs as they are
         const span = document.createElement('span');
-        span.textContent = el.value || el.textContent;
-        if (el.classList.contains('row-amount')) {
-          span.textContent = parseFloat(el.textContent).toFixed(2);
+        span.textContent = input.value || '';
+        
+        // Special handling for amounts
+        if (input.classList.contains('row-qty') || input.classList.contains('row-price')) {
+          span.textContent = parseFloat(input.value || 0).toFixed(input.classList.contains('row-price') ? 2 : 0);
         }
-        el.parentNode.replaceChild(span, el);
+        
+        // Apply styling to match the design
+        span.style.display = 'inline-block';
+        span.style.width = '100%';
+        span.style.padding = '2px';
+        span.style.minHeight = '20px';
+        
+        // Replace input with span
+        input.parentNode.replaceChild(span, input);
       } else {
-        // Style readonly fields
-        el.style.border = 'none';
-        el.style.backgroundColor = 'transparent';
-        el.style.padding = '0';
+        // Style date input
+        input.style.border = 'none';
+        input.style.backgroundColor = 'transparent';
+        input.style.padding = '0';
       }
     });
     
-    // Remove the "Add Item" button
+    // Remove the "Add Item" button if it exists
     const addButton = element.querySelector('button[onclick="addRow()"]');
     if (addButton) addButton.remove();
     
     // Remove delete buttons from items
     element.querySelectorAll('button[onclick^="removeRow"]').forEach(btn => btn.remove());
     
-    // Add PDF-specific styling
+    // Add PDF-specific styling to maintain layout
     element.style.padding = '20px';
     element.style.boxShadow = 'none';
     element.style.maxWidth = '100%';
     
-    // Generate PDF
+    // Generate PDF with better margins
     const opt = {
-      margin: 10,
+      margin: [10, 10, 10, 10], // [top, left, bottom, right]
       filename: document.getElementById('invoiceNumber').value + '.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { 
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compressPDF: true
+      }
     };
     
-    html2pdf().set(opt).from(element).save();
+    // Add loading indicator
+    const loadingText = document.createElement('div');
+    loadingText.textContent = 'Generating PDF...';
+    loadingText.style.position = 'fixed';
+    loadingText.style.top = '50%';
+    loadingText.style.left = '50%';
+    loadingText.style.transform = 'translate(-50%, -50%)';
+    loadingText.style.backgroundColor = 'white';
+    loadingText.style.padding = '20px';
+    loadingText.style.border = '1px solid #2F75B5';
+    document.body.appendChild(loadingText);
+    
+    // Generate and save PDF
+    html2pdf().set(opt).from(element).save().then(() => {
+      document.body.removeChild(loadingText);
+    });
   }
 
   function downloadInvoicePDF(invoiceId) {
     const invoice = invoices.find(i => i.id === invoiceId);
     if (!invoice) return;
     
-    // Create a temporary element with the invoice data
+    // Create a new container that matches the form layout
     const element = document.createElement('div');
-    element.style.padding = '20px';
+    element.className = 'invoice-container';
+    element.style.width = '800px';
+    element.style.margin = '0 auto';
+    element.style.background = 'white';
+    element.style.padding = '30px';
     element.style.fontFamily = 'Calibri, Arial, sans-serif';
     
+    // Build the invoice HTML to match the form layout exactly
     element.innerHTML = `
       <div class="header" style="display:flex; justify-content:space-between; margin-bottom:30px; border-bottom:2px solid #2F75B5; padding-bottom:20px;">
         <div>
@@ -623,14 +666,26 @@
 
       <div class="invoice-info" style="display:flex; justify-content:space-between; margin-bottom:30px;">
         <div class="client-info" style="width:48%;">
-          <div><span style="font-weight:bold;">Bill To:</span> ${invoice.customerName}</div>
-          <div><span style="font-weight:bold;">Address:</span> ${invoice.customerAddress}</div>
+          <div><span style="font-weight:bold; display:inline-block; width:120px;">Bill To:</span>
+            <span style="display:inline-block; width:calc(100% - 130px);">${invoice.customerName}</span>
+          </div>
+          <div><span style="font-weight:bold; display:inline-block; width:120px;">Address:</span>
+            <span style="display:inline-block; width:calc(100% - 130px);">${invoice.customerAddress}</span>
+          </div>
         </div>
         <div class="invoice-meta" style="width:48%;">
-          <div><span style="font-weight:bold;">Invoice #:</span> ${invoice.invoiceNumber}</div>
-          <div><span style="font-weight:bold;">Date:</span> ${invoice.date}</div>
-          <div><span style="font-weight:bold;">Terms:</span> ${invoice.terms}</div>
-          <div><span style="font-weight:bold;">Currency:</span> ${invoice.currency}</div>
+          <div><span style="font-weight:bold; display:inline-block; width:120px;">Invoice #:</span>
+            <span style="display:inline-block; width:calc(100% - 130px);">${invoice.invoiceNumber}</span>
+          </div>
+          <div><span style="font-weight:bold; display:inline-block; width:120px;">Date:</span>
+            <span style="display:inline-block; width:calc(100% - 130px);">${invoice.date}</span>
+          </div>
+          <div><span style="font-weight:bold; display:inline-block; width:120px;">Terms:</span>
+            <span style="display:inline-block; width:calc(100% - 130px);">${invoice.terms}</span>
+          </div>
+          <div><span style="font-weight:bold; display:inline-block; width:120px;">Currency:</span>
+            <span style="display:inline-block; width:calc(100% - 130px);">${invoice.currency}</span>
+          </div>
         </div>
       </div>
 
@@ -649,9 +704,9 @@
             <tr>
               <td style="padding:10px; border-bottom:1px solid #ddd;">${item.reference || ''}</td>
               <td style="padding:10px; border-bottom:1px solid #ddd;">${item.description || ''}</td>
-              <td style="padding:10px; border-bottom:1px solid #ddd;">${item.quantity}</td>
-              <td style="padding:10px; border-bottom:1px solid #ddd;">${item.unitPrice.toFixed(2)}</td>
-              <td style="padding:10px; border-bottom:1px solid #ddd;">${item.amount.toFixed(2)}</td>
+              <td style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">${item.quantity}</td>
+              <td style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">${item.unitPrice.toFixed(2)}</td>
+              <td style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">${item.amount.toFixed(2)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -681,17 +736,43 @@
       </div>
     `;
     
-    // Generate PDF
+    // Generate PDF with the same options as the current invoice
     const opt = {
-      margin: 10,
+      margin: [10, 10, 10, 10],
       filename: invoice.invoiceNumber + '.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { 
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compressPDF: true
+      }
     };
     
-    html2pdf().set(opt).from(element).save();
+    // Add loading indicator
+    const loadingText = document.createElement('div');
+    loadingText.textContent = 'Generating PDF...';
+    loadingText.style.position = 'fixed';
+    loadingText.style.top = '50%';
+    loadingText.style.left = '50%';
+    loadingText.style.transform = 'translate(-50%, -50%)';
+    loadingText.style.backgroundColor = 'white';
+    loadingText.style.padding = '20px';
+    loadingText.style.border = '1px solid #2F75B5';
+    document.body.appendChild(loadingText);
+    
+    // Generate and save PDF
+    html2pdf().set(opt).from(element).save().then(() => {
+      document.body.removeChild(loadingText);
+    });
   }
+
 </script>
 </body>
 </html>
