@@ -376,85 +376,110 @@
     });
   }
 
-  function saveInvoice() {
+function saveInvoice() {
     console.log("Save invoice function triggered");
     
     // Validate required fields
     if (!document.getElementById('customerName').value) {
-      alert("Customer name is required");
-      return;
+        alert("Customer name is required");
+        return;
     }
 
     const items = [];
     const rows = document.querySelectorAll('#invoiceItems tr');
     
     if (rows.length === 0) {
-      alert("Please add at least one item");
-      return;
+        alert("Please add at least one item");
+        return;
     }
 
-    // Collect items data with validation
-    rows.forEach(row => {
-      const rowId = row.getAttribute('data-row-id');
-      const qty = parseFloat(row.querySelector(`.row-qty[data-row="${rowId}"]`).value) || 0;
-      const price = parseFloat(row.querySelector(`.row-price[data-row="${rowId}"]`).value) || 0;
-      
-      if (qty <= 0 || price <= 0) {
-        alert("Quantity and price must be greater than 0");
-        return;
-      }
+    // Flag to track validation
+    let validationFailed = false;
 
-      items.push({
-        reference: row.querySelector(`.row-ref[data-row="${rowId}"]`).value || "N/A",
-        description: row.querySelector(`.row-desc[data-row="${rowId}"]`).value || "No description",
-        quantity: qty,
-        unitPrice: price,
-        amount: qty * price
-      });
+    // Collect items data with better validation
+    rows.forEach(row => {
+        const rowId = row.getAttribute('data-row-id');
+        const qtyInput = row.querySelector(`.row-qty[data-row="${rowId}"]`);
+        const priceInput = row.querySelector(`.row-price[data-row="${rowId}"]`);
+        
+        const qty = parseFloat(qtyInput.value);
+        const price = parseFloat(priceInput.value);
+        
+        // Highlight problematic fields
+        if (isNaN(qty) {
+            qtyInput.style.border = "1px solid red";
+            validationFailed = true;
+        } else {
+            qtyInput.style.border = "";
+        }
+        
+        if (isNaN(price)) {
+            priceInput.style.border = "1px solid red";
+            validationFailed = true;
+        } else {
+            priceInput.style.border = "";
+        }
+
+        if (isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) {
+            validationFailed = true;
+            return; // Skip adding this item
+        }
+
+        items.push({
+            reference: row.querySelector(`.row-ref[data-row="${rowId}"]`).value || "N/A",
+            description: row.querySelector(`.row-desc[data-row="${rowId}"]`).value || "No description",
+            quantity: qty,
+            unitPrice: price,
+            amount: qty * price
+        });
     });
 
+    if (validationFailed) {
+        alert("Please check all items - quantity and price must be numbers greater than 0");
+        return;
+    }
+
+    if (items.length === 0) {
+        alert("No valid items to save");
+        return;
+    }
+
     const invoiceData = {
-      date: document.getElementById('invoiceDate').value || new Date().toISOString().split('T')[0],
-      invoiceNumber: document.getElementById('invoiceNumber').value,
-      customerName: document.getElementById('customerName').value,
-      customerAddress: document.getElementById('customerAddress').value || "Not specified",
-      terms: document.getElementById('terms').value || "Due on receipt",
-      currency: document.getElementById('currency').value,
-      items: items,
-      subTotal: parseFloat(document.getElementById('subTotal').textContent) || 0,
-      discount: parseFloat(document.getElementById('discount').value) || 0,
-      total: parseFloat(document.getElementById('totalAmount').textContent) || 0,
-      timestamp: firebase.database.ServerValue.TIMESTAMP,
-      status: "active"
+        date: document.getElementById('invoiceDate').value || new Date().toISOString().split('T')[0],
+        invoiceNumber: document.getElementById('invoiceNumber').value,
+        customerName: document.getElementById('customerName').value,
+        customerAddress: document.getElementById('customerAddress').value || "Not specified",
+        terms: document.getElementById('terms').value || "Due on receipt",
+        currency: document.getElementById('currency').value,
+        items: items,
+        subTotal: parseFloat(document.getElementById('subTotal').textContent) || 0,
+        discount: parseFloat(document.getElementById('discount').value) || 0,
+        total: parseFloat(document.getElementById('totalAmount').textContent) || 0,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        status: "active"
     };
 
     console.log("Attempting to save:", invoiceData);
 
-    // Save to Firebase with error handling
+    // Save to Firebase
     const newInvoiceRef = database.ref('invoices').push();
     newInvoiceRef.set(invoiceData)
-      .then(() => {
-        console.log("Firebase save successful");
-        alert('✅ Invoice saved successfully!');
-        
-        // Update invoice counter
-        return database.ref('invoiceCounter').transaction(current => {
-          return (current || 0) + 1;
+        .then(() => {
+            console.log("Firebase save successful");
+            alert('✅ Invoice saved successfully!');
+            return database.ref('invoiceCounter').transaction(current => {
+                return (current || 0) + 1;
+            });
+        })
+        .then(() => {
+            loadInvoices();
+            generateInvoiceNumber();
+        })
+        .catch(error => {
+            console.error("Save error:", error);
+            alert('❌ Error saving invoice: ' + error.message);
         });
-      })
-      .then(() => {
-        loadInvoices(); // Refresh the list
-        generateInvoiceNumber(); // Get next invoice number
-      })
-      .catch(error => {
-        console.error("Save error:", error);
-        alert('❌ Error saving invoice: ' + error.message);
-        
-        if (error.code) {
-          console.log("Error code:", error.code);
-          console.log("Error details:", error.details);
-        }
-      });
+}
   }
 
   function loadInvoices() {
